@@ -1,8 +1,11 @@
+import warnings
 import numpy as np
 import csv
 import sys
 import os
 import spacy
+
+warnings.filterwarnings("ignore", message=".*rule-based lemmatizer.*")
 
 from collections import Counter
 
