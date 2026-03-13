@@ -205,11 +205,12 @@ def train(trainset, validset, testset, run_tag, hp):
             model.eval()
             dev_f1, th = evaluate(model, valid_iter)
             test_f1 = evaluate(model, test_iter, threshold=th)
-        except RuntimeError as e:
-            print(f"\n*** ERROR at epoch {epoch}: {e} ***")
+        except Exception as e:
+            print(f"\n*** ERROR at epoch {epoch} ({type(e).__name__}): {e} ***", flush=True)
             if "out of memory" in str(e).lower():
-                print("*** Try reducing --batch_size (e.g. --batch_size 16) ***")
-                torch.cuda.empty_cache()
+                print("*** Try reducing --batch_size (e.g. --batch_size 16) ***", flush=True)
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
             writer.close()
             raise
 
