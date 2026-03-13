@@ -166,12 +166,12 @@ def train(trainset, validset, testset, run_tag, hp):
                                  num_workers=0,
                                  collate_fn=padder)
     valid_iter = data.DataLoader(dataset=validset,
-                                 batch_size=hp.batch_size*16,
+                                 batch_size=hp.batch_size*4,
                                  shuffle=False,
                                  num_workers=0,
                                  collate_fn=padder)
     test_iter = data.DataLoader(dataset=testset,
-                                 batch_size=hp.batch_size*16,
+                                 batch_size=hp.batch_size*4,
                                  shuffle=False,
                                  num_workers=0,
                                  collate_fn=padder)
@@ -196,14 +196,22 @@ def train(trainset, validset, testset, run_tag, hp):
 
     best_dev_f1 = best_test_f1 = 0.0
     for epoch in range(1, hp.n_epochs+1):
-        # train
-        model.train()
-        train_step(train_iter, model, optimizer, scheduler, hp)
+        try:
+            # train
+            model.train()
+            train_step(train_iter, model, optimizer, scheduler, hp)
 
-        # eval
-        model.eval()
-        dev_f1, th = evaluate(model, valid_iter)
-        test_f1 = evaluate(model, test_iter, threshold=th)
+            # eval
+            model.eval()
+            dev_f1, th = evaluate(model, valid_iter)
+            test_f1 = evaluate(model, test_iter, threshold=th)
+        except RuntimeError as e:
+            print(f"\n*** ERROR at epoch {epoch}: {e} ***")
+            if "out of memory" in str(e).lower():
+                print("*** Try reducing --batch_size (e.g. --batch_size 16) ***")
+                torch.cuda.empty_cache()
+            writer.close()
+            raise
 
         if dev_f1 > best_dev_f1:
             best_dev_f1 = dev_f1
